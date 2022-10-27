@@ -1,4 +1,12 @@
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+
+# make a db object and a migrate object
+# migration talks about taking ourselves from an empty database to a db that has the schema, table and relations that we want
+# migrate object helps us create these rules
+db = SQLAlchemy()
+migrate = Migrate()
 
 def create_app():
     # must be named exactly this becuase we will be running through flask on the command line. 
@@ -6,6 +14,22 @@ def create_app():
     # __name__ stores the name of the module we're in
     app = Flask(__name__)
     # need to do the above
+
+    # part of sqlalchemy boilerplate:
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # where is my postgres database on the my computer? later, on the internet
+    # postgres:postgres refers to username:password
+    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql+psycopg2://postgres:postgres@localhost:5432/bikes_development"
+
+
+    # import Bike model
+    # must do this before the next two lines or else migrate won't be able to import it
+    from app.models.bike import Bike
+
+    # where you connect the database to the app:
+    db.init_app(app)
+    # and the migrate object to the app and database
+    migrate.init_app(app,db)
 
 
     # configuration
