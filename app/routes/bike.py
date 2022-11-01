@@ -81,7 +81,21 @@ def add_bike():
 
 @bike_bp.route("", methods=["GET"])
 def get_all_bikes():
-    bikes = Bike.query.all()
+# this part for query params
+    name_param = request.args.get("name")
+    # dictionary that has all query params in it 
+    # --> you specify you want "name" key
+# if client has not specified query param with key "name":    
+    if name_param is None:
+        bikes = Bike.query.all()
+# if client has provided us query param "name"
+    else:
+        bikes = Bike.query.filter_by(name = name_param)
+        # filtering by the query param
+        # can't just write (name_param) or else sqlalchemy 
+        # doesn't know which column we are filtering on
+
+# the rest of the code stays the same
     response = []
     for bike in bikes:
         bike_dict = {
