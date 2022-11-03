@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, make_response, abort
 from app import db
 from app.models.bike import Bike
 
@@ -108,3 +108,71 @@ def get_all_bikes():
         response.append(bike_dict)
 
     return jsonify(response), 200
+
+# flask allows us to put functionality for multiple features into a single function
+# but it enhances readability and editability if we separate them into their own funcitons
+# and can be further improved using helper functions
+
+
+def validate_bike(bike_id):
+    try:
+        verified_id = int(bike_id)
+    except ValueError:
+        abort(make_response("Invalid ID: id must be an integer", 400))
+
+    bike = Bike.query.get(bike_id)
+
+    if not bike:
+        abort(make_response("Invalid ID: id does not exist", 404))
+
+    return bike
+
+
+@bike_bp.route("/<bike_id>", methods=["GET"])
+def get_specific_bike(bike_id):
+    bike = validate_bike(bike_id)
+
+    return {
+            "id": bike.id,
+            "name": bike.name,
+            "price": bike.price,
+            "size": bike.size,
+            "type": bike.type
+        }
+
+# don't need to call jsonify() or make_response on return b/c
+# flask automatically convert a dictionary into an HTTP response body
+# we can call these methods on everything just to be safe
+
+
+@bike_bp.route("/<bike_id>", methods=["PUT"])
+def update_bike(bike_id):
+    bike=validate_bike(bike_id)
+
+    request_body=request.get_json()
+
+    # to maintain convention that PUT updates all attributes, check all attrubtes given:
+    if "name" not in request_body or \
+    "price" not in request_body or \
+    "size" not in request_body or \
+    "type" not in request_body:
+        return jsonify({"Must include bike name, price, size, and type"}), 400
+
+    bike.title = request_body["title"]
+    bike.price = request_body["price"]
+    bike.size = request_body["size"]
+    bike.type = request_body["type"]
+
+    db.session.commit()
+
+    return make_response(f"Bike #{bike_id} was successfully updated")
+
+
+@bike_bp.route("/<bike_id>", methods=["DELETE"])
+def delete_bike(bike_id):
+    bike=validate_bike(bike_id)
+
+    db.session.delete(bike)
+    db.session.commit()
+
+    return make_response(f"Bike #{bike_id} was successfully deleted", 200)
